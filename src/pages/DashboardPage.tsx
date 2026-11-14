@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { WelcomeCard } from '../components/dashboard/WelcomeCard';
 import { StatsGrid } from '../components/dashboard/StatsGrid';
@@ -10,7 +10,7 @@ import { ProgressBar } from '../components/common/ProgressBar';
 import { EmptyState } from '../components/common/EmptyState';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { CheckSquare, AlertCircle, ArrowRight } from 'lucide-react';
+import { CheckSquare, AlertCircle, ArrowRight, CalendarCheck } from 'lucide-react';
 import { getToday } from '../utils/helpers';
 import './DashboardPage.css';
 
@@ -25,6 +25,31 @@ export const DashboardPage: React.FC = () => {
 
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isCarryingForward, setIsCarryingForward] = useState(false);
+  const [todayPlanNotes, setTodayPlanNotes] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadTodayPlan = async () => {
+      if (!window.daytrack) return;
+      try {
+        const plan = await window.daytrack.getDailyPlan(getToday());
+        if (!cancelled) setTodayPlanNotes(plan?.notes?.trim() || '');
+      } catch (err) {
+        console.error("Failed to load today's plan notes:", err);
+      }
+    };
+
+    loadTodayPlan();
+    const cleanup = window.daytrack?.onDayChanged(() => {
+      loadTodayPlan();
+    });
+
+    return () => {
+      cancelled = true;
+      if (cleanup) cleanup();
+    };
+  }, []);
 
   const totalTasks = todayTasks.length;
   const completedTasks = todayTasks.filter((t) => t.status === 'completed').length;
@@ -51,6 +76,17 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="dashboard-page">
       <WelcomeCard />
+
+      {todayPlanNotes && (
+        <Card
+          className="today-plan-card"
+          title="Plan for today"
+          subtitle="Saved from your end-of-day planning"
+          icon={<CalendarCheck size={18} />}
+        >
+          <p className="today-plan-notes">{todayPlanNotes}</p>
+        </Card>
+      )}
 
       {/* Progress Bar Card */}
       <Card className="progress-banner-card" noPadding>

@@ -221,6 +221,63 @@ export interface TimerState {
   estimatedMinutes: number;
 }
 
+// ── Reminders ──
+
+export type ReminderSource =
+  | 'startup'
+  | 'resume'
+  | 'unlock'
+  | 'focus'
+  | 'second-instance'
+  | 'notification';
+
+export interface ReminderTaskInfo {
+  id: number;
+  title: string;
+  scheduled_date: string;          // YYYY-MM-DD
+  status: TaskStatus;
+  priority: TaskPriority;
+  category: TaskCategory;
+}
+
+export interface ReminderPayload {
+  source: ReminderSource;
+  pendingCount: number;
+  todayPendingCount: number;
+  overdueCount: number;
+  tasks: ReminderTaskInfo[];
+  message: string;
+  missingTomorrowPlan: boolean;
+  tomorrowDate: string;
+}
+
+export interface ClosePromptPayload {
+  pendingCount: number;
+  todayPendingCount: number;
+  overdueCount: number;
+  tasks: ReminderTaskInfo[];
+  missingTomorrowPlan: boolean;
+  tomorrowDate: string;
+}
+
+export type ClosePromptDecision = 'prepare' | 'later' | 'close';
+
+// ── Windows Task Scheduler ──
+
+export interface WindowsReminderStatus {
+  supported: boolean;          // packaged Windows build
+  registered: boolean;
+  enabled: boolean;
+  state: string;               // Ready | Running | Disabled | Unknown
+  exePath: string;             // executable the task currently launches
+  expectedExePath: string;     // currently running executable
+  needsUpdate: boolean;
+  triggers: string[];
+  lastRunTime: string | null;
+  lastResult: number | null;
+  message: string;
+}
+
 // ── Navigation ──
 
 export type PageName = 'dashboard' | 'tasks' | 'timer' | 'calendar' | 'analytics' | 'planning' | 'settings';
@@ -311,9 +368,19 @@ export interface DayTrackAPI {
   selectFile: () => Promise<string | null>;
   selectSaveLocation: (defaultName: string) => Promise<string | null>;
 
+  // Reminders
+  getPendingReminder: () => Promise<ReminderPayload | null>;
+  dismissReminder: () => Promise<void>;
+  respondClosePrompt: (decision: ClosePromptDecision) => Promise<void>;
+  getWindowsReminderStatus: () => Promise<WindowsReminderStatus>;
+  registerWindowsReminderTasks: () => Promise<WindowsReminderStatus>;
+
   // Events from main process
   onTimerUpdate: (callback: (state: TimerState) => void) => () => void;
   onDayChanged: (callback: (date: string) => void) => () => void;
+  onReminder: (callback: (payload: ReminderPayload) => void) => () => void;
+  onClosePrompt: (callback: (payload: ClosePromptPayload) => void) => () => void;
+  onPreparePlan: (callback: () => void) => () => void;
 }
 
 // ── Extend Window ──

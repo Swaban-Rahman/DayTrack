@@ -1,9 +1,14 @@
 import { app } from 'electron';
 
 const HIDDEN_ARG = '--hidden';
+const REMINDER_CHECK_ARG = '--reminder-check';
 
 export function isLoginStartup(): boolean {
   return process.argv.includes(HIDDEN_ARG);
+}
+
+export function isReminderCheckLaunch(argv: string[] = process.argv): boolean {
+  return argv.includes(REMINDER_CHECK_ARG);
 }
 
 function startupArgs(startMinimized: boolean): string[] {

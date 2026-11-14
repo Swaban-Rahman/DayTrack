@@ -35,6 +35,7 @@ export const PlanningPage: React.FC = () => {
   const [summaryNotes, setSummaryNotes] = useState('');
   const [nextPlanNotes, setNextPlanNotes] = useState('');
   const [savedPlan, setSavedPlan] = useState<DailyPlan | null>(null);
+  const [savedNextPlan, setSavedNextPlan] = useState<DailyPlan | null>(null);
   const [savedSummary, setSavedSummary] = useState<DailySummary | null>(null);
   const [savingPlan, setSavingPlan] = useState(false);
   const [savingSummary, setSavingSummary] = useState(false);
@@ -71,6 +72,7 @@ export const PlanningPage: React.FC = () => {
       setSummaryNotes(summary?.notes || '');
       setDayAnalytics(analytics || null);
       setNextDateTasks(nextTasks || []);
+      setSavedNextPlan(nextPlan || null);
       setNextPlanNotes(nextPlan?.notes || '');
     } catch (err) {
       console.error('Failed to load planning data:', err);
@@ -135,7 +137,9 @@ export const PlanningPage: React.FC = () => {
     if (!window.daytrack) return;
     setSavingNextPlan(true);
     try {
-      await window.daytrack.saveDailyPlan(nextDate, nextPlanNotes);
+      const plan = await window.daytrack.saveDailyPlan(nextDate, nextPlanNotes);
+      setSavedNextPlan(plan);
+      setNextPlanNotes(plan.notes);
       setStatus(`Plan saved for ${formatFullDate(nextDate)}.`, 'success');
     } catch (err) {
       setStatus(err instanceof Error ? err.message : 'Could not save tomorrow\'s plan.', 'error');
@@ -361,6 +365,9 @@ export const PlanningPage: React.FC = () => {
             <Button variant="primary" loading={savingNextPlan} onClick={saveNextPlan}>
               Save next-day plan
             </Button>
+            {savedNextPlan && (
+              <span className="muted-note">Saved {savedNextPlan.updated_at}</span>
+            )}
           </div>
         </Card>
       </section>

@@ -9,6 +9,7 @@ import { Select } from '../components/common/Select';
 import { Input } from '../components/common/Input';
 import { Modal } from '../components/common/Modal';
 import { getToday, shiftDate } from '../utils/helpers';
+import type { WindowsReminderStatus } from '../types';
 import './SettingsPage.css';
 
 export const SettingsPage: React.FC = () => {
@@ -33,6 +34,39 @@ export const SettingsPage: React.FC = () => {
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [resetText, setResetText] = useState('');
+  const [scheduler, setScheduler] = useState<WindowsReminderStatus | null>(null);
+  const [schedulerBusy, setSchedulerBusy] = useState(false);
+
+  useEffect(() => {
+    if (!window.daytrack) return;
+    window.daytrack
+      .getWindowsReminderStatus()
+      .then(setScheduler)
+      .catch(console.error);
+  }, []);
+
+  const reregisterScheduler = async () => {
+    if (!window.daytrack) return;
+    setSchedulerBusy(true);
+    try {
+      const status = await window.daytrack.registerWindowsReminderTasks();
+      setScheduler(status);
+      notify(status.message, status.registered && status.enabled ? 'success' : 'error');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Could not register the Windows task.', 'error');
+    } finally {
+      setSchedulerBusy(false);
+    }
+  };
+
+  const schedulerSummary = (() => {
+    if (!scheduler) return 'Checking…';
+    if (!scheduler.supported) return scheduler.message;
+    if (!scheduler.registered) return scheduler.message;
+    const state = scheduler.enabled ? `${scheduler.state}` : 'Disabled';
+    const triggers = scheduler.triggers.length > 0 ? scheduler.triggers.join(' · ') : 'no triggers';
+    return `${state} · ${triggers}`;
+  })();
 
   useEffect(() => {
     if (!window.daytrack) return;
@@ -229,6 +263,24 @@ export const SettingsPage: React.FC = () => {
         <div className="settings-test-row">
           <Button variant="ghost" size="sm" icon={<Bell size={14} />} onClick={sendTestNotification}>
             Send test notification
+          </Button>
+        </div>
+        <div className="settings-windows-reminder">
+          <div>
+            <strong>Windows reminder tasks</strong>
+            <span>{schedulerSummary}</span>
+            {scheduler?.registered && scheduler.needsUpdate && (
+              <span className="settings-warning">{scheduler.message}</span>
+            )}
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            loading={schedulerBusy}
+            disabled={!scheduler?.supported}
+            onClick={reregisterScheduler}
+          >
+            Re-register
           </Button>
         </div>
       </Card>

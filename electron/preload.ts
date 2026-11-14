@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron';
-import type { DayTrackAPI, TimerState } from '../src/types/index';
+import type { DayTrackAPI, TimerState, ReminderPayload, ClosePromptPayload } from '../src/types/index';
 
 const api: DayTrackAPI = {
   // ── Tasks ──
@@ -69,6 +69,13 @@ const api: DayTrackAPI = {
   selectFile: () => ipcRenderer.invoke('system:selectFile'),
   selectSaveLocation: (defaultName) => ipcRenderer.invoke('system:selectSaveLocation', defaultName),
 
+  // ── Reminders ──
+  getPendingReminder: () => ipcRenderer.invoke('reminder:getPending'),
+  dismissReminder: () => ipcRenderer.invoke('reminder:dismiss'),
+  respondClosePrompt: (decision) => ipcRenderer.invoke('reminder:closeDecision', decision),
+  getWindowsReminderStatus: () => ipcRenderer.invoke('reminder:schedulerStatus'),
+  registerWindowsReminderTasks: () => ipcRenderer.invoke('reminder:schedulerRegister'),
+
   // ── Events from main process ──
   onTimerUpdate: (callback: (state: TimerState) => void) => {
     const listener = (_event: Electron.IpcRendererEvent, state: TimerState) => callback(state);
@@ -82,6 +89,27 @@ const api: DayTrackAPI = {
     ipcRenderer.on('day:changed', listener);
     return () => {
       ipcRenderer.removeListener('day:changed', listener);
+    };
+  },
+  onReminder: (callback: (payload: ReminderPayload) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: ReminderPayload) => callback(payload);
+    ipcRenderer.on('reminder:show', listener);
+    return () => {
+      ipcRenderer.removeListener('reminder:show', listener);
+    };
+  },
+  onClosePrompt: (callback: (payload: ClosePromptPayload) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, payload: ClosePromptPayload) => callback(payload);
+    ipcRenderer.on('reminder:close-prompt', listener);
+    return () => {
+      ipcRenderer.removeListener('reminder:close-prompt', listener);
+    };
+  },
+  onPreparePlan: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('reminder:prepare-plan', listener);
+    return () => {
+      ipcRenderer.removeListener('reminder:prepare-plan', listener);
     };
   },
 };

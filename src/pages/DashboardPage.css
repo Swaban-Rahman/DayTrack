@@ -3,6 +3,18 @@
   flex-direction: column;
 }
 
+.today-plan-card {
+  margin-bottom: 24px;
+}
+
+.today-plan-notes {
+  margin: 0;
+  white-space: pre-wrap;
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
 .progress-banner-card {
   margin-bottom: 24px;
 }

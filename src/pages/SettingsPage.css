@@ -29,6 +29,35 @@
   margin-top: 14px;
 }
 
+.settings-windows-reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--bg-input);
+}
+
+.settings-windows-reminder strong {
+  display: block;
+  font-size: 13px;
+}
+
+.settings-windows-reminder span {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.settings-windows-reminder .settings-warning {
+  color: var(--warning);
+}
+
 .reset-warning {
   color: var(--text-secondary);
   line-height: 1.6;

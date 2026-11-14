@@ -14,10 +14,14 @@ import type {
   CreateTaskInput,
   UpdateTaskInput,
   ActiveTimerContext,
+  ReminderPayload,
+  ClosePromptPayload,
+  ClosePromptDecision,
 } from "../types";
 import { getToday } from "../utils/helpers";
 import { Modal } from "../components/common/Modal";
 import { Button } from "../components/common/Button";
+import { PendingReminderModal, ClosePromptModal } from "../components/reminders/ReminderModal";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 
 type ToastKind = "error" | "success" | "info";
@@ -78,6 +82,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isLoading, setIsLoading] = useState(true);
   const [pendingStart, setPendingStart] = useState<PendingStart | null>(null);
   const [toast, setToast] = useState<{ message: string; kind: ToastKind } | null>(null);
+  const [reminder, setReminder] = useState<ReminderPayload | null>(null);
+  const [closePrompt, setClosePrompt] = useState<ClosePromptPayload | null>(null);
 
   const timerRef = useRef<TimerState>(EMPTY_TIMER);
   const activeRef = useRef<ActiveTimerContext | null>(null);
@@ -136,6 +142,18 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     let cleanupTimer: (() => void) | undefined;
     let cleanupDay: (() => void) | undefined;
+    let cleanupReminder: (() => void) | undefined;
+    let cleanupClosePrompt: (() => void) | undefined;
+    let cleanupPreparePlan: (() => void) | undefined;
+    let pendingSyncTimer: number | undefined;
+
+    const applyPendingReminder = (pending: ReminderPayload | null) => {
+      if (!pending) return;
+      setReminder(pending);
+      if (pending.source === "startup" || pending.source === "notification") {
+        setCurrentPage("dashboard");
+      }
+    };
 
     const init = async () => {
       setIsLoading(true);
@@ -173,6 +191,44 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
           refreshActiveSession();
           notify("A new day has started. Today's plan and backlog are refreshed.", "info");
         });
+
+        cleanupReminder = window.daytrack.onReminder((payload) => {
+          setClosePrompt(null);
+          setReminder(payload);
+          if (payload.source === "startup" || payload.source === "notification") {
+            setCurrentPage("dashboard");
+          }
+        });
+
+        cleanupClosePrompt = window.daytrack.onClosePrompt((payload) => {
+          setReminder(null);
+          setClosePrompt(payload);
+        });
+
+        cleanupPreparePlan = window.daytrack.onPreparePlan(() => {
+          setReminder(null);
+          setClosePrompt(null);
+          setCurrentPage("planning");
+        });
+
+        try {
+          const pending = await window.daytrack.getPendingReminder();
+          applyPendingReminder(pending);
+        } catch (e) {
+          console.error("Error loading pending reminder:", e);
+        }
+
+        // The main process may generate the startup reminder just after the
+        // renderer mounts, and a pushed event can arrive before listeners are
+        // attached. Re-read once to close that gap without polling forever.
+        pendingSyncTimer = window.setTimeout(async () => {
+          try {
+            const pending = await window.daytrack.getPendingReminder();
+            applyPendingReminder(pending);
+          } catch (e) {
+            console.error("Error re-checking pending reminder:", e);
+          }
+        }, 1500);
       }
       setIsLoading(false);
     };
@@ -180,8 +236,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     init();
 
     return () => {
+      if (pendingSyncTimer) window.clearTimeout(pendingSyncTimer);
       if (cleanupTimer) cleanupTimer();
       if (cleanupDay) cleanupDay();
+      if (cleanupReminder) cleanupReminder();
+      if (cleanupClosePrompt) cleanupClosePrompt();
+      if (cleanupPreparePlan) cleanupPreparePlan();
       if (toastTimer.current) window.clearTimeout(toastTimer.current);
     };
   }, [refreshTasks, refreshActiveSession, refreshSettings, notify]);
@@ -339,6 +399,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     setPendingStart(null);
   };
 
+  const dismissReminder = () => {
+    setReminder(null);
+    window.daytrack?.dismissReminder().catch((err) => console.error("Failed to dismiss reminder:", err));
+  };
+
+  const reviewPendingTasks = () => {
+    dismissReminder();
+    setCurrentPage("dashboard");
+  };
+
+  const prepareTomorrowPlan = () => {
+    dismissReminder();
+    setCurrentPage("planning");
+  };
+
+  const handleCloseDecision = async (decision: ClosePromptDecision) => {
+    setClosePrompt(null);
+    if (decision === "prepare") {
+      setCurrentPage("planning");
+    }
+    try {
+      await window.daytrack?.respondClosePrompt(decision);
+    } catch (err) {
+      console.error("Failed to send close decision:", err);
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -366,6 +453,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
       }}
     >
       {children}
+
+      {reminder && (
+        <PendingReminderModal
+          payload={reminder}
+          onDismiss={dismissReminder}
+          onReview={reviewPendingTasks}
+          onPreparePlan={prepareTomorrowPlan}
+        />
+      )}
+
+      {closePrompt && (
+        <ClosePromptModal payload={closePrompt} onDecision={handleCloseDecision} />
+      )}
 
       <Modal
         isOpen={!!pendingStart}
