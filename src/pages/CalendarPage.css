@@ -1,0 +1,16 @@
+.calendar-page {
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-page-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1000px) {
+  .calendar-page-layout {
+    grid-template-columns: 1fr;
+  }
+}

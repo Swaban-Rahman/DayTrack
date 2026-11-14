@@ -1,0 +1,43 @@
+.textarea-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 100%;
+}
+
+.textarea-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.textarea-field {
+  width: 100%;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 14px;
+  resize: vertical;
+  transition: all var(--transition-fast);
+}
+
+.textarea-field:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-light);
+}
+
+.textarea-field.textarea-error {
+  border-color: var(--danger);
+}
+
+.textarea-field::placeholder {
+  color: var(--text-muted);
+}
+
+.textarea-error-text {
+  font-size: 12px;
+  color: var(--danger);
+}

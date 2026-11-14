@@ -1,0 +1,37 @@
+.day-detail-summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 12px 16px;
+  background-color: var(--bg-input);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.day-metric {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.metric-icon.success {
+  color: var(--success);
+}
+
+.metric-icon.accent {
+  color: var(--accent);
+}
+
+.day-detail-task-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.no-day-tasks-text {
+  text-align: center;
+  padding: 24px 0;
+  font-size: 13px;
+  color: var(--text-muted);
+}

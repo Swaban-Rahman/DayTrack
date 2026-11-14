@@ -1,0 +1,105 @@
+.planning-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.planning-header,
+.tasks-section-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.review-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.review-date-field input,
+.settings-inline input {
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  font-size: 14px;
+}
+
+.review-date-label {
+  margin-top: -8px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.planning-status {
+  background: var(--accent-light);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.planning-stats,
+.planning-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.planning-stat strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 26px;
+}
+
+.planning-stat span,
+.muted-note,
+.backlog-row span {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.stat-label,
+.planning-actions,
+.backlog-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.planning-actions {
+  margin-top: 12px;
+  justify-content: space-between;
+}
+
+.planning-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.backlog-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.backlog-row {
+  justify-content: space-between;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.backlog-row div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}

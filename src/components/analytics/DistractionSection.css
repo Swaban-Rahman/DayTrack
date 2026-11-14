@@ -1,0 +1,78 @@
+.distraction-form {
+  margin-bottom: 24px;
+}
+
+.distraction-form-fields {
+  display: grid;
+  grid-template-columns: 180px 140px 1fr auto;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.distraction-submit-wrap {
+  margin-bottom: 2px;
+}
+
+.distraction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.no-distraction-text {
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 16px 0;
+}
+
+.distraction-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background-color: var(--bg-input);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.distraction-item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.distraction-duration {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.distraction-desc {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.distraction-del-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.distraction-del-btn:hover {
+  color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+@media (max-width: 900px) {
+  .distraction-form-fields {
+    grid-template-columns: 1fr;
+  }
+}

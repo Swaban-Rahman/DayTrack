@@ -1,0 +1,97 @@
+.active-task-card {
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(108, 99, 255, 0.12) 0%, rgba(20, 20, 31, 0.95) 100%);
+  border: 1px solid var(--accent);
+  box-shadow: 0 4px 20px var(--accent-glow);
+}
+
+.active-task-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.active-task-left {
+  flex: 1;
+  min-width: 220px;
+}
+
+.active-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--accent);
+  margin-bottom: 6px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pulse-dot.running {
+  background-color: var(--success);
+  box-shadow: 0 0 8px var(--success);
+  animation: pulse 1.5s infinite;
+}
+
+.pulse-dot.paused {
+  background-color: var(--warning);
+}
+
+.active-task-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.active-task-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.active-meta-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.active-task-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.active-timer-number {
+  font-family: var(--font-mono);
+  font-size: 32px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: 1px;
+  text-shadow: 0 0 16px var(--accent-glow);
+}
+
+.active-timer-caption {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.active-task-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}

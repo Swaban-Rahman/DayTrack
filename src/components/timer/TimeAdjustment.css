@@ -1,0 +1,25 @@
+.time-adjustment-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.adjustment-success-banner {
+  background-color: var(--success-light);
+  color: var(--success);
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+
+.adjustment-row {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 16px;
+}
+
+.adjustment-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}

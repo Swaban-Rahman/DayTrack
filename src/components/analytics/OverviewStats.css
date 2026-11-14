@@ -1,0 +1,65 @@
+.overview-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.overview-stat-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.overview-icon-badge {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.overview-icon-badge.primary {
+  background-color: var(--accent-light);
+  color: var(--accent);
+}
+
+.overview-icon-badge.success {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.overview-icon-badge.warning {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.overview-icon-badge.danger {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
+.overview-stat-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.overview-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.overview-value {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-top: 2px;
+}
