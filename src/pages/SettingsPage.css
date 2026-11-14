@@ -13,6 +13,33 @@
   font-size: 13px;
 }
 
+.settings-message.success {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.settings-message.error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.settings-test-row {
+  margin-top: 14px;
+}
+
+.reset-warning {
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 14px;
+}
+
+.toggle-row.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .settings-grid,
 .settings-inline {
   display: grid;

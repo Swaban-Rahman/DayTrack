@@ -111,6 +111,17 @@
   background: linear-gradient(135deg, rgba(108, 99, 255, 0.15), rgba(108, 99, 255, 0.08));
 }
 
+.sidebar-timer-widget.paused {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: linear-gradient(135deg, rgba(251, 191, 36, 0.08), rgba(251, 191, 36, 0.03));
+}
+
+.widget-pulsing-dot.paused {
+  background-color: var(--warning);
+  box-shadow: 0 0 6px var(--warning);
+  animation: none;
+}
+
 .widget-header {
   display: flex;
   align-items: center;

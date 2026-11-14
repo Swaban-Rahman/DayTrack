@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { getToday } from '../../utils/helpers';
 import './CalendarGrid.css';
 
 interface CalendarGridProps {
@@ -8,6 +9,7 @@ interface CalendarGridProps {
   onSelectDate: (date: string) => void;
   onPrevMonth: () => void;
   onNextMonth: () => void;
+  onToday: () => void;
   taskCountsByDate: Record<string, { total: number; completed: number }>;
 }
 
@@ -17,6 +19,7 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   onSelectDate,
   onPrevMonth,
   onNextMonth,
+  onToday,
   taskCountsByDate
 }) => {
   const year = currentMonth.getFullYear();
@@ -32,13 +35,16 @@ export const CalendarGrid: React.FC<CalendarGridProps> = ({
   const daysArray = Array.from({ length: totalDays }, (_, i) => i + 1);
   const leadingBlanks = Array.from({ length: firstDayIndex }, (_, i) => i);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getToday();
 
   return (
     <div className="calendar-grid-card">
       <div className="calendar-nav-bar">
         <h3 className="calendar-month-title">{monthName}</h3>
         <div className="calendar-nav-btns">
+          <button className="cal-today-btn" onClick={onToday}>
+            Today
+          </button>
           <button className="cal-nav-btn" onClick={onPrevMonth} aria-label="Previous Month">
             <ChevronLeft size={18} />
           </button>

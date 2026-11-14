@@ -9,6 +9,10 @@
   gap: 24px;
 }
 
+.calendar-page-layout > * {
+  min-width: 0;
+}
+
 @media (max-width: 1000px) {
   .calendar-page-layout {
     grid-template-columns: 1fr;

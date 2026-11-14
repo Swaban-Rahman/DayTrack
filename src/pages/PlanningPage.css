@@ -45,6 +45,60 @@
   font-size: 13px;
 }
 
+.planning-status.success {
+  background: var(--success-light);
+  color: var(--success);
+  border-color: rgba(74, 222, 128, 0.35);
+}
+
+.planning-status.error {
+  background: var(--danger-light);
+  color: var(--danger);
+  border-color: rgba(248, 113, 113, 0.35);
+}
+
+.planning-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.planning-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+
+.planning-category-chip strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.planning-category-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.planning-section-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.planning-task-list {
+  display: flex;
+  flex-direction: column;
+}
+
 .planning-stats,
 .planning-grid {
   display: grid;

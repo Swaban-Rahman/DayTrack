@@ -7,6 +7,31 @@
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 20px;
+  align-items: start;
+}
+
+.timer-page-grid > * {
+  min-width: 0;
+}
+
+.timer-page-empty {
+  background-color: var(--bg-card);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.timer-page-empty h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.timer-page-empty p {
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 @media (max-width: 900px) {

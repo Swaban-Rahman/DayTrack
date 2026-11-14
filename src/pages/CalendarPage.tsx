@@ -1,24 +1,41 @@
-import React, { useState, useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { CalendarGrid } from '../components/calendar/CalendarGrid';
 import { DayDetail } from '../components/calendar/DayDetail';
-import type { Task } from '../types';
-import { getToday } from '../utils/helpers';
+import { useApp } from '../context/AppContext';
+import type { DailyAnalytics, SessionWithTask, Task } from '../types';
+import { getToday, toDateString } from '../utils/helpers';
 import './CalendarPage.css';
 
 export const CalendarPage: React.FC = () => {
+  const { todayTasks } = useApp();
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
   const [selectedDate, setSelectedDate] = useState<string>(getToday());
   const [dayTasks, setDayTasks] = useState<Task[]>([]);
+  const [daySessions, setDaySessions] = useState<SessionWithTask[]>([]);
+  const [dayAnalytics, setDayAnalytics] = useState<DailyAnalytics | null>(null);
+  const [dayLoading, setDayLoading] = useState(false);
   const [taskCounts, setTaskCounts] = useState<Record<string, { total: number; completed: number }>>({});
 
-  const loadDateTasks = async (date: string) => {
-    if (window.daytrack) {
-      const tasks = await window.daytrack.getTasks(date);
+  const loadDateData = useCallback(async (date: string) => {
+    if (!window.daytrack) return;
+    setDayLoading(true);
+    try {
+      const [tasks, sessions, analytics] = await Promise.all([
+        window.daytrack.getTaskHistory(date),
+        window.daytrack.getSessionsByDate(date),
+        window.daytrack.getDailyAnalytics(date)
+      ]);
       setDayTasks(tasks || []);
+      setDaySessions(sessions || []);
+      setDayAnalytics(analytics || null);
+    } catch (err) {
+      console.error('Failed to load day history:', err);
+    } finally {
+      setDayLoading(false);
     }
-  };
+  }, []);
 
-  const loadMonthCounts = async (monthDate: Date) => {
+  const loadMonthCounts = useCallback(async (monthDate: Date) => {
     if (!window.daytrack) return;
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
@@ -27,39 +44,49 @@ export const CalendarPage: React.FC = () => {
     const lastDay = `${year}-${(month + 1).toString().padStart(2, '0')}-${lastDate.toString().padStart(2, '0')}`;
 
     try {
-      const monthTasks = await window.daytrack.getTasksByRange(firstDay, lastDay);
+      const history = await window.daytrack.getTaskHistoryByRange(firstDay, lastDay);
       const counts: Record<string, { total: number; completed: number }> = {};
-      monthTasks.forEach((t) => {
-        if (!counts[t.scheduled_date]) {
-          counts[t.scheduled_date] = { total: 0, completed: 0 };
+      history.forEach((t) => {
+        const day = t.history_day || t.scheduled_date;
+        if (!counts[day]) {
+          counts[day] = { total: 0, completed: 0 };
         }
-        counts[t.scheduled_date].total += 1;
-        if (t.status === 'completed') {
-          counts[t.scheduled_date].completed += 1;
+        counts[day].total += 1;
+        if ((t.day_status || t.status) === 'completed') {
+          counts[day].completed += 1;
         }
       });
       setTaskCounts(counts);
     } catch (err) {
-      console.error('Failed to load month tasks:', err);
+      console.error('Failed to load month history:', err);
     }
-  };
+  }, []);
 
   useEffect(() => {
     loadMonthCounts(currentMonth);
-  }, [currentMonth]);
+  }, [currentMonth, loadMonthCounts]);
 
   useEffect(() => {
-    loadDateTasks(selectedDate);
-  }, [selectedDate]);
+    loadDateData(selectedDate);
+  }, [selectedDate, loadDateData, todayTasks]);
+
+  const refreshAll = () => {
+    loadDateData(selectedDate);
+    loadMonthCounts(currentMonth);
+  };
+
+  const goToToday = () => {
+    const today = new Date();
+    setCurrentMonth(new Date(today.getFullYear(), today.getMonth(), 1));
+    setSelectedDate(toDateString(today));
+  };
 
   const handlePrevMonth = () => {
-    const prev = new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1);
-    setCurrentMonth(prev);
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
   };
 
   const handleNextMonth = () => {
-    const next = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
-    setCurrentMonth(next);
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   return (
@@ -72,6 +99,7 @@ export const CalendarPage: React.FC = () => {
             onSelectDate={setSelectedDate}
             onPrevMonth={handlePrevMonth}
             onNextMonth={handleNextMonth}
+            onToday={goToToday}
             taskCountsByDate={taskCounts}
           />
         </div>
@@ -80,10 +108,10 @@ export const CalendarPage: React.FC = () => {
           <DayDetail
             date={selectedDate}
             tasks={dayTasks}
-            onRefreshDate={() => {
-              loadDateTasks(selectedDate);
-              loadMonthCounts(currentMonth);
-            }}
+            sessions={daySessions}
+            analytics={dayAnalytics}
+            loading={dayLoading}
+            onRefreshDate={refreshAll}
           />
         </div>
       </div>

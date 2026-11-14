@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Download, FolderOpen, RotateCcw, Save } from 'lucide-react';
+import { Bell, Download, FolderOpen, RotateCcw, Save } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useTheme } from '../context/ThemeContext';
 import { useSettings } from '../hooks/useSettings';
@@ -29,16 +29,28 @@ export const SettingsPage: React.FC = () => {
   const [exportStart, setExportStart] = useState(shiftDate(getToday(), -29));
   const [exportEnd, setExportEnd] = useState(getToday());
   const [message, setMessage] = useState('');
+  const [messageKind, setMessageKind] = useState<'info' | 'success' | 'error'>('info');
   const [busy, setBusy] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [resetText, setResetText] = useState('');
 
   useEffect(() => {
     if (!window.daytrack) return;
-    window.daytrack.getAutoStartup().then(setAutoStartupState).catch(console.error);
+    window.daytrack
+      .getAutoStartup(settings.startMinimized !== 'false')
+      .then(setAutoStartupState)
+      .catch(console.error);
+  }, [settings.startMinimized]);
+
+  useEffect(() => {
+    if (!window.daytrack) return;
     window.daytrack.getAppVersion().then(setVersion).catch(console.error);
   }, []);
 
-  const notify = (text: string) => setMessage(text);
+  const notify = (text: string, kind: 'info' | 'success' | 'error' = 'info') => {
+    setMessage(text);
+    setMessageKind(kind);
+  };
 
   const updateFlag = async (key: string, enabled: boolean) => {
     await setSetting(key, enabled ? 'true' : 'false');
@@ -52,10 +64,10 @@ export const SettingsPage: React.FC = () => {
     setBusy(true);
     try {
       const path = await exportToCSV(exportStart, exportEnd);
-      notify(path ? `Exported to ${path}` : 'Export cancelled.');
+      notify(path ? `Exported to ${path}` : 'Export cancelled.', path ? 'success' : 'info');
     } catch (err) {
       const text = err instanceof Error ? err.message : 'Export failed.';
-      notify(text.toLowerCase().includes('cancel') ? 'Export cancelled.' : text);
+      notify(text.toLowerCase().includes('cancel') ? 'Export cancelled.' : text, text.toLowerCase().includes('cancel') ? 'info' : 'error');
     } finally {
       setBusy(false);
     }
@@ -65,10 +77,10 @@ export const SettingsPage: React.FC = () => {
     setBusy(true);
     try {
       const path = await backupData();
-      notify(path ? `Backup saved to ${path}` : 'Backup cancelled.');
+      notify(path ? `Backup saved to ${path}` : 'Backup cancelled.', path ? 'success' : 'info');
     } catch (err) {
       const text = err instanceof Error ? err.message : 'Backup failed.';
-      notify(text.toLowerCase().includes('cancel') ? 'Backup cancelled.' : text);
+      notify(text.toLowerCase().includes('cancel') ? 'Backup cancelled.' : text, text.toLowerCase().includes('cancel') ? 'info' : 'error');
     } finally {
       setBusy(false);
     }
@@ -85,26 +97,37 @@ export const SettingsPage: React.FC = () => {
       }
       await restoreData(filePath);
       await reloadAfterDataChange();
-      notify('Backup restored. Your tasks and settings were reloaded.');
+      notify('Backup restored. Your tasks and settings were reloaded.', 'success');
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Restore failed.');
+      notify(err instanceof Error ? err.message : 'Restore failed.', 'error');
     } finally {
       setBusy(false);
     }
   };
 
   const runReset = async () => {
+    if (resetText !== 'RESET') return;
     setBusy(true);
     try {
       await resetData();
       await reloadAfterDataChange();
       setTheme('dark');
       setConfirmReset(false);
-      notify('All DayTrack data was reset.');
+      setResetText('');
+      notify('All DayTrack data was reset.', 'success');
     } catch (err) {
-      notify(err instanceof Error ? err.message : 'Reset failed.');
+      notify(err instanceof Error ? err.message : 'Reset failed.', 'error');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const sendTestNotification = async () => {
+    try {
+      await window.daytrack.showNotification('DayTrack', 'Notifications are working.');
+      notify('Test notification sent.', 'success');
+    } catch (err) {
+      notify(err instanceof Error ? err.message : 'Could not send a notification.', 'error');
     }
   };
 
@@ -118,7 +141,7 @@ export const SettingsPage: React.FC = () => {
         <p className="page-subheading">Appearance, reminders, and the local database.</p>
       </div>
 
-      {message && <p className="settings-message">{message}</p>}
+      {message && <p className={`settings-message ${messageKind}`}>{message}</p>}
 
       <Card title="Appearance">
         <div className="settings-grid">
@@ -155,7 +178,7 @@ export const SettingsPage: React.FC = () => {
         <div className="settings-toggles">
           <ToggleRow
             label="Notifications"
-            description="Show the daily startup summary."
+            description="Show the daily startup summary and deadline reminders."
             checked={flag('notificationsEnabled', true)}
             onChange={(checked) => updateFlag('notificationsEnabled', checked)}
           />
@@ -173,13 +196,40 @@ export const SettingsPage: React.FC = () => {
           />
           <ToggleRow
             label="Start with Windows"
-            description="Open DayTrack when you sign in."
+            description="Open DayTrack automatically when you sign in."
             checked={autoStartup}
             onChange={async (checked) => {
               setAutoStartupState(checked);
-              await setAutoStartup(checked);
+              await setAutoStartup(checked, flag('startMinimized', true));
             }}
           />
+          <ToggleRow
+            label="Start minimized in tray"
+            description="When launching at sign-in, start hidden in the system tray."
+            checked={flag('startMinimized', true)}
+            disabled={!autoStartup}
+            onChange={async (checked) => {
+              await updateFlag('startMinimized', checked);
+              await setAutoStartup(true, checked);
+            }}
+          />
+          <ToggleRow
+            label="Close to tray"
+            description="Keep DayTrack running in the tray when the window is closed."
+            checked={flag('minimizeToTray', true)}
+            onChange={(checked) => updateFlag('minimizeToTray', checked)}
+          />
+          <ToggleRow
+            label="Pause timer on lock"
+            description="Pause the running timer when Windows locks the screen."
+            checked={flag('pauseOnLock', true)}
+            onChange={(checked) => updateFlag('pauseOnLock', checked)}
+          />
+        </div>
+        <div className="settings-test-row">
+          <Button variant="ghost" size="sm" icon={<Bell size={14} />} onClick={sendTestNotification}>
+            Send test notification
+          </Button>
         </div>
       </Card>
 
@@ -207,17 +257,39 @@ export const SettingsPage: React.FC = () => {
 
       <Modal
         isOpen={confirmReset}
-        onClose={() => setConfirmReset(false)}
+        onClose={() => {
+          setConfirmReset(false);
+          setResetText('');
+        }}
         title="Reset all data?"
         size="sm"
         footer={
           <>
-            <Button variant="ghost" onClick={() => setConfirmReset(false)}>Cancel</Button>
-            <Button variant="danger" loading={busy} onClick={runReset}>Reset</Button>
+            <Button
+              variant="ghost"
+              onClick={() => {
+                setConfirmReset(false);
+                setResetText('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button variant="danger" loading={busy} disabled={resetText !== 'RESET'} onClick={runReset}>
+              Reset
+            </Button>
           </>
         }
       >
-        <p>This deletes tasks, timers, plans, distractions, and settings stored on this computer.</p>
+        <p className="reset-warning">
+          This deletes tasks, timers, plans, distractions, and settings stored on this computer.
+          Consider creating a backup first.
+        </p>
+        <Input
+          label='Type "RESET" to confirm'
+          value={resetText}
+          placeholder="RESET"
+          onChange={(event) => setResetText(event.target.value)}
+        />
       </Modal>
     </div>
   );
@@ -227,9 +299,10 @@ const ToggleRow: React.FC<{
   label: string;
   description: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: (checked: boolean) => void;
-}> = ({ label, description, checked, onChange }) => (
-  <label className="toggle-row">
+}> = ({ label, description, checked, disabled = false, onChange }) => (
+  <label className={`toggle-row ${disabled ? 'disabled' : ''}`}>
     <div>
       <strong>{label}</strong>
       <span>{description}</span>
@@ -237,6 +310,7 @@ const ToggleRow: React.FC<{
     <input
       type="checkbox"
       checked={checked}
+      disabled={disabled}
       onChange={(event) => onChange(event.target.checked)}
     />
   </label>

@@ -22,6 +22,25 @@
 .calendar-nav-btns {
   display: flex;
   gap: 8px;
+  align-items: center;
+}
+
+.cal-today-btn {
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.cal-today-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }
 
 .cal-nav-btn {

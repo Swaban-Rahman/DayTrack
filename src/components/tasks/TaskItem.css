@@ -66,9 +66,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
+  min-width: 0;
 }
 
 .task-title {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 14px;
   font-weight: 500;
   color: var(--text-primary);
@@ -99,10 +103,16 @@
   padding: 2px 7px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
+  white-space: nowrap;
 }
 
 .time-overrun {
   color: var(--danger);
+  font-weight: 600;
+}
+
+.time-underrun {
+  color: var(--success);
   font-weight: 600;
 }
 
@@ -145,6 +155,11 @@
   border-color: var(--accent);
   color: #fff;
   box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.task-timer-btn.paused {
+  border-color: var(--warning);
+  color: var(--warning);
 }
 
 .timer-live-time {

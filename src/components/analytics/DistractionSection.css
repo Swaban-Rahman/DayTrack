@@ -4,13 +4,21 @@
 
 .distraction-form-fields {
   display: grid;
-  grid-template-columns: 180px 140px 1fr auto;
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
   align-items: flex-end;
+}
+
+.distraction-error {
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--danger);
 }
 
 .distraction-submit-wrap {
   margin-bottom: 2px;
+  justify-self: start;
+  align-self: end;
 }
 
 .distraction-list {
@@ -40,6 +48,31 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.distraction-item-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.distraction-category {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.distraction-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.distraction-item.is-break {
+  border-color: rgba(56, 189, 248, 0.25);
 }
 
 .distraction-duration {
@@ -47,6 +80,10 @@
   font-weight: 600;
   color: var(--danger);
   font-size: 13px;
+}
+
+.distraction-duration.break {
+  color: var(--info, #38bdf8);
 }
 
 .distraction-desc {

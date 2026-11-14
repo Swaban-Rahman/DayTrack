@@ -1,26 +1,38 @@
 import React, { useState, useEffect } from 'react';
-import type { Task, CreateTaskInput, TaskPriority, TaskCategory } from '../../types';
-import { TASK_CATEGORIES, TASK_PRIORITIES } from '../../types';
+import type { Task, CreateTaskInput, TaskPriority, TaskCategory, TaskStatus } from '../../types';
+import { TASK_CATEGORIES, TASK_PRIORITIES, TASK_STATUSES } from '../../types';
 import { Modal } from '../common/Modal';
 import { Input } from '../common/Input';
 import { TextArea } from '../common/TextArea';
 import { Select } from '../common/Select';
 import { Button } from '../common/Button';
-import { getToday } from '../../utils/helpers';
+import { getToday, toDateTimeLocalValue, fromDateTimeLocalValue } from '../../utils/helpers';
 import './TaskForm.css';
+
+export type TaskFormSubmit = CreateTaskInput & { status?: TaskStatus };
 
 interface TaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSubmit: (data: CreateTaskInput) => Promise<void>;
+  onSubmit: (data: TaskFormSubmit) => Promise<void>;
   initialTask?: Task | null;
+  defaultDate?: string;
+}
+
+function normalizeDeadline(deadline: string | null, scheduledDate: string): string {
+  if (!deadline) return '';
+  if (/^\d{2}:\d{2}$/.test(deadline)) {
+    return `${scheduledDate}T${deadline}`;
+  }
+  return toDateTimeLocalValue(deadline);
 }
 
 export const TaskForm: React.FC<TaskFormProps> = ({
   isOpen,
   onClose,
   onSubmit,
-  initialTask
+  initialTask,
+  defaultDate
 }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -30,19 +42,24 @@ export const TaskForm: React.FC<TaskFormProps> = ({
   const [estimatedMinutes, setEstimatedMinutes] = useState('0');
   const [deadline, setDeadline] = useState('');
   const [scheduledDate, setScheduledDate] = useState(getToday());
+  const [status, setStatus] = useState<TaskStatus>('pending');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!isOpen) return;
+
     if (initialTask) {
+      const date = initialTask.scheduled_date || getToday();
       setTitle(initialTask.title);
       setDescription(initialTask.description || '');
       setPriority(initialTask.priority);
       setCategory(initialTask.category);
       setEstimatedHours(Math.floor(initialTask.estimated_minutes / 60).toString());
       setEstimatedMinutes((initialTask.estimated_minutes % 60).toString());
-      setDeadline(initialTask.deadline || '');
-      setScheduledDate(initialTask.scheduled_date || getToday());
+      setDeadline(normalizeDeadline(initialTask.deadline, date));
+      setScheduledDate(date);
+      setStatus(initialTask.status);
     } else {
       setTitle('');
       setDescription('');
@@ -51,38 +68,61 @@ export const TaskForm: React.FC<TaskFormProps> = ({
       setEstimatedHours('1');
       setEstimatedMinutes('0');
       setDeadline('');
-      setScheduledDate(getToday());
+      setScheduledDate(defaultDate || getToday());
+      setStatus('pending');
     }
     setError('');
-  }, [initialTask, isOpen]);
+  }, [initialTask, isOpen, defaultDate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) {
       setError('Task title is required');
       return;
     }
+    if (trimmedTitle.length > 300) {
+      setError('Task title must be 300 characters or fewer');
+      return;
+    }
+    if (!scheduledDate) {
+      setError('Choose a scheduled date');
+      return;
+    }
 
-    const totalEstMinutes = (parseInt(estimatedHours || '0', 10) * 60) + parseInt(estimatedMinutes || '0', 10);
+    const hours = parseInt(estimatedHours || '0', 10);
+    const minutes = parseInt(estimatedMinutes || '0', 10);
+    if (isNaN(hours) || isNaN(minutes) || hours < 0 || minutes < 0 || minutes > 59) {
+      setError('Enter a valid estimated duration');
+      return;
+    }
+
+    const totalEstMinutes = hours * 60 + minutes;
     if (totalEstMinutes <= 0) {
       setError('Estimated time must be greater than 0');
       return;
     }
+    if (totalEstMinutes > 24 * 60) {
+      setError('Estimated time cannot exceed 24 hours');
+      return;
+    }
 
     setIsSubmitting(true);
+    setError('');
     try {
       await onSubmit({
-        title: title.trim(),
+        title: trimmedTitle,
         description: description.trim(),
         priority,
         category,
         estimated_minutes: totalEstMinutes,
-        deadline: deadline || undefined,
-        scheduled_date: scheduledDate
+        deadline: deadline ? fromDateTimeLocalValue(deadline) : '',
+        scheduled_date: scheduledDate,
+        ...(initialTask ? { status } : {})
       });
       onClose();
-    } catch (err: any) {
-      setError(err?.message || 'Failed to save task');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save task');
     } finally {
       setIsSubmitting(false);
     }
@@ -101,6 +141,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
         <Input
           label="Task Title *"
           value={title}
+          maxLength={300}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="e.g. Complete React practice, Thesis chapter 3"
           autoFocus
@@ -138,7 +179,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
 
         <div className="form-row-2">
           <div className="duration-inputs">
-            <label className="duration-label">Estimated Time</label>
+            <label className="duration-label">Estimated Time *</label>
             <div className="duration-fields">
               <div className="duration-col">
                 <input
@@ -167,19 +208,36 @@ export const TaskForm: React.FC<TaskFormProps> = ({
           </div>
 
           <Input
-            label="Scheduled Date"
+            label="Scheduled Date *"
             type="date"
             value={scheduledDate}
             onChange={(e) => setScheduledDate(e.target.value)}
+            required
           />
         </div>
 
-        <Input
-          label="Deadline (Optional)"
-          type="time"
-          value={deadline}
-          onChange={(e) => setDeadline(e.target.value)}
-        />
+        <div className="form-row-2">
+          <Input
+            label="Deadline (Optional)"
+            type="datetime-local"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+          />
+
+          {initialTask ? (
+            <Select
+              label="Status"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as TaskStatus)}
+              options={TASK_STATUSES.map((s) => ({
+                value: s,
+                label: s === 'in_progress' ? 'In Progress' : s.charAt(0).toUpperCase() + s.slice(1)
+              }))}
+            />
+          ) : (
+            <div />
+          )}
+        </div>
 
         <div className="form-actions">
           <Button type="button" variant="secondary" onClick={onClose}>

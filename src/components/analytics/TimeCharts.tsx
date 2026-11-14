@@ -18,8 +18,17 @@ import { Card } from '../common/Card';
 import type { CategoryBreakdown, EstimatedVsActual } from '../../types';
 import './TimeCharts.css';
 
+interface DailyAccountingPoint {
+  date: string;
+  tracked: number;
+  breaks: number;
+  distractions: number;
+  unaccounted: number;
+}
+
 interface TimeChartsProps {
   dailyHoursData: { date: string; hours: number }[];
+  dailyAccountingData: DailyAccountingPoint[];
   categoryData: CategoryBreakdown[];
   estimatedVsActualData: EstimatedVsActual[];
   weeklyTrendData: { date: string; completed: number; planned: number }[];
@@ -29,6 +38,7 @@ const CATEGORY_COLORS = ['#6c63ff', '#38bdf8', '#a78bfa', '#fb923c', '#4ade80', 
 
 export const TimeCharts: React.FC<TimeChartsProps> = ({
   dailyHoursData,
+  dailyAccountingData,
   categoryData,
   estimatedVsActualData,
   weeklyTrendData
@@ -38,8 +48,50 @@ export const TimeCharts: React.FC<TimeChartsProps> = ({
     value: Math.round(c.minutes / 60 * 10) / 10
   })).filter((c) => c.value > 0);
 
+  const hasAccountingData = dailyAccountingData.some(
+    (d) => d.tracked + d.breaks + d.distractions + d.unaccounted > 0
+  );
+
   return (
     <div className="analytics-charts-grid">
+      {/* Productive vs break vs distraction vs unaccounted */}
+      <Card
+        title="Time Accounting"
+        subtitle="Productive, break, distraction and unaccounted time per day"
+      >
+        <div className="chart-container">
+          {!hasAccountingData ? (
+            <p className="no-chart-data">No activity recorded for this period.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <BarChart data={dailyAccountingData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="date" stroke="var(--text-muted)" fontSize={12} />
+                <YAxis stroke="var(--text-muted)" fontSize={12} unit="h" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--bg-card)',
+                    borderColor: 'var(--border)',
+                    borderRadius: '8px',
+                    color: 'var(--text-primary)'
+                  }}
+                  formatter={(val: any, name: any) => [`${val} h`, name]}
+                />
+                <Legend />
+                <Bar dataKey="tracked" name="Productive" stackId="a" fill="var(--accent)" />
+                <Bar dataKey="breaks" name="Breaks" stackId="a" fill="#38bdf8" />
+                <Bar dataKey="distractions" name="Distractions" stackId="a" fill="#f87171" />
+                <Bar dataKey="unaccounted" name="Unaccounted" stackId="a" fill="#475569" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+        <p className="chart-footnote">
+          Unaccounted time is simply working hours with no recorded activity. It is not treated as
+          wasted — only manually logged distractions count as time leaks.
+        </p>
+      </Card>
+
       {/* Daily Tracked Hours Bar Chart */}
       <Card title="Tracked Hours Trend" subtitle="Daily productive work in hours">
         <div className="chart-container">

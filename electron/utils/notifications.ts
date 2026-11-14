@@ -1,59 +1,61 @@
 import { Notification } from 'electron';
-import type { Task } from '../../src/types/index';
+import { getDb } from '../database/init';
 
-const scheduledTimeouts: NodeJS.Timeout[] = [];
-
-export function clearAllReminders(): void {
-  for (const t of scheduledTimeouts) {
-    clearTimeout(t);
-  }
-  scheduledTimeouts.length = 0;
-}
-
-export function scheduleDeadlineReminders(tasks: Task[]): void {
-  // Clear previous reminders before scheduling new ones
-  clearAllReminders();
-
-  const now = Date.now();
-
-  for (const task of tasks) {
-    if (!task.deadline || task.status === 'completed') continue;
-
-    const deadlineTime = new Date(task.deadline).getTime();
-    // Remind 30 minutes before deadline
-    const reminderTime = deadlineTime - 30 * 60 * 1000;
-
-    if (reminderTime > now) {
-      const timeout = setTimeout(() => {
-        if (Notification.isSupported()) {
-          new Notification({
-            title: '⏰ Deadline Approaching',
-            body: `"${task.title}" is due in 30 minutes!`,
-          }).show();
-        }
-      }, reminderTime - now);
-      scheduledTimeouts.push(timeout);
-    }
-  }
-}
-
-export function showDailyStartupNotification(taskCount: number): void {
+export function showNotification(title: string, body: string): void {
   if (!Notification.isSupported()) return;
+  new Notification({ title, body }).show();
+}
 
-  new Notification({
-    title: '📋 DayTrack – Good Morning!',
-    body:
-      taskCount > 0
-        ? `You have ${taskCount} task${taskCount === 1 ? '' : 's'} scheduled for today. Let's get productive!`
-        : 'No tasks scheduled yet. Plan your day!',
-  }).show();
+export function showDailyStartupNotification(taskCount: number, unfinishedCount: number): void {
+  let body: string;
+  if (taskCount > 0) {
+    body = `You have ${taskCount} task${taskCount === 1 ? '' : 's'} scheduled for today.`;
+  } else {
+    body = 'No tasks scheduled yet. Plan your day in DayTrack.';
+  }
+  if (unfinishedCount > 0) {
+    body += ` ${unfinishedCount} unfinished task${unfinishedCount === 1 ? '' : 's'} waiting from earlier days.`;
+  }
+  showNotification('DayTrack – Good Morning', body);
 }
 
 export function showBreakReminder(): void {
-  if (!Notification.isSupported()) return;
+  showNotification('Time for a break', "You've been tracking work for a while. Take a short break to stay fresh.");
+}
 
-  new Notification({
-    title: '☕ Time for a Break',
-    body: 'You\'ve been working for a while. Take a short break to stay fresh!',
-  }).show();
+interface DeadlineCandidate {
+  id: number;
+  title: string;
+  deadline: string;
+}
+
+/**
+ * Runs every minute so tasks added after startup are covered. Returns the set of
+ * reminder keys that have now been delivered.
+ */
+export function checkDeadlineReminders(notified: Set<string>): void {
+  const db = getDb();
+  const now = Date.now();
+  const windowEnd = now + 30 * 60 * 1000;
+
+  const tasks = db.prepare(`
+    SELECT id, title, deadline FROM tasks
+    WHERE is_deleted = 0 AND status <> 'completed' AND deadline IS NOT NULL AND deadline <> ''
+  `).all() as DeadlineCandidate[];
+
+  for (const task of tasks) {
+    const deadline = new Date(task.deadline).getTime();
+    if (!Number.isFinite(deadline)) continue;
+    const key = `${task.id}:${task.deadline}`;
+    if (notified.has(key)) continue;
+
+    if (deadline <= windowEnd && deadline >= now - 60 * 1000) {
+      const minutesLeft = Math.max(0, Math.round((deadline - now) / 60000));
+      const body = minutesLeft > 0
+        ? `"${task.title}" is due in ${minutesLeft} minute${minutesLeft === 1 ? '' : 's'}.`
+        : `"${task.title}" is due now.`;
+      showNotification('Deadline approaching', body);
+      notified.add(key);
+    }
+  }
 }

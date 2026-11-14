@@ -11,7 +11,7 @@ import { EmptyState } from '../components/common/EmptyState';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { CheckSquare, AlertCircle, ArrowRight } from 'lucide-react';
-import { getToday, getYesterday } from '../utils/helpers';
+import { getToday } from '../utils/helpers';
 import './DashboardPage.css';
 
 export const DashboardPage: React.FC = () => {
@@ -38,7 +38,11 @@ export const DashboardPage: React.FC = () => {
   const handleCarryForwardAll = async () => {
     setIsCarryingForward(true);
     try {
-      await carryForwardTasks(getYesterday(), getToday());
+      const today = getToday();
+      const dates = Array.from(new Set(unfinishedTasks.map((t) => t.scheduled_date)));
+      for (const date of dates) {
+        await carryForwardTasks(date, today);
+      }
     } finally {
       setIsCarryingForward(false);
     }

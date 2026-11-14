@@ -4,22 +4,129 @@
   gap: 16px;
 }
 
-.adjustment-success-banner {
-  background-color: var(--success-light);
-  color: var(--success);
+.adjustment-success-banner,
+.adjustment-error-banner {
   padding: 8px 12px;
   border-radius: var(--radius);
   font-size: 13px;
 }
 
+.adjustment-success-banner {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.adjustment-error-banner {
+  background-color: var(--danger-light);
+  color: var(--danger);
+}
+
 .adjustment-row {
   display: grid;
-  grid-template-columns: 140px 1fr;
-  gap: 16px;
+  grid-template-columns: 120px 160px 1fr;
+  gap: 14px;
 }
 
 .adjustment-buttons {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.adjustment-note {
+  font-size: 12px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.adjustment-history {
+  border-top: 1px dashed var(--border);
+  padding-top: 14px;
+}
+
+.adjustment-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+.adjustment-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.adjustment-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+}
+
+.adjustment-item:last-child {
+  margin-bottom: 0;
+}
+
+.adjustment-item-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.adjustment-reason {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.adjustment-item-side {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.adjustment-date {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.adjustment-del-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.adjustment-del-btn:hover {
+  color: var(--danger);
+  background-color: var(--danger-light);
+}
+
+.adjustment-modal-text {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+@media (max-width: 900px) {
+  .adjustment-row {
+    grid-template-columns: 1fr;
+  }
 }

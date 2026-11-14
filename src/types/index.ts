@@ -21,6 +21,17 @@ export const DISTRACTION_CATEGORIES = [
 ] as const;
 export type DistractionCategory = typeof DISTRACTION_CATEGORIES[number];
 
+export const BREAK_CATEGORIES = [
+  'Short break',
+  'Meal',
+  'Exercise',
+  'Rest / recharge',
+  'Other break'
+] as const;
+export type BreakCategory = typeof BREAK_CATEGORIES[number];
+
+export type LogKind = 'distraction' | 'break';
+
 // ── Database Row Types ──
 
 export interface Task {
@@ -37,17 +48,33 @@ export interface Task {
   created_at: string;
   updated_at: string;
   completed_at: string | null;
-  carried_forward_from: string | null; // original scheduled_date
-  is_deleted: number;              // 0 | 1
+  carried_forward_from: string | null;
+  is_deleted: number;
+  // Present when the row came from the per-day history table.
+  day_status?: TaskStatus;
+  history_day?: string;
 }
 
 export interface TaskSession {
   id: number;
   task_id: number;
+  session_date: string;            // YYYY-MM-DD (local date the session started)
   start_time: string;              // ISO 8601
   end_time: string | null;
   duration_seconds: number;
   is_active: number;               // 0 | 1
+  last_heartbeat: string | null;
+}
+
+export interface SessionWithTask extends TaskSession {
+  task_title: string;
+  task_category: TaskCategory;
+}
+
+export interface ActiveTimerContext {
+  session: TaskSession | null;     // running session, or the last session for a paused task
+  task: Task;
+  isRunning: boolean;
 }
 
 export interface DailyPlan {
@@ -72,6 +99,7 @@ export interface DailySummary {
 export interface TimeAdjustment {
   id: number;
   task_id: number;
+  adjustment_date: string | null;
   adjusted_minutes: number;
   reason: string;
   created_at: string;
@@ -80,6 +108,7 @@ export interface TimeAdjustment {
 export interface DistractionLog {
   id: number;
   log_date: string;                // YYYY-MM-DD
+  kind: LogKind;
   category: string;
   duration_minutes: number;
   description: string;
@@ -112,6 +141,12 @@ export interface UpdateTaskInput {
   completed_at?: string | null;
 }
 
+export interface UpdateSessionInput {
+  id: number;
+  start_time: string;
+  end_time: string;
+}
+
 export interface TaskFilters {
   status?: TaskStatus;
   category?: TaskCategory;
@@ -123,6 +158,7 @@ export interface TaskFilters {
 
 export interface CreateDistractionInput {
   log_date: string;
+  kind?: LogKind;
   category: string;
   duration_minutes: number;
   description: string;
@@ -141,14 +177,26 @@ export interface EstimatedVsActual {
   actual: number;
 }
 
+export interface TaskTimeBreakdown {
+  taskId: number;
+  taskTitle: string;
+  category: TaskCategory;
+  minutes: number;
+}
+
 export interface DailyAnalytics {
   date: string;
   totalTrackedMinutes: number;
+  adjustmentMinutes: number;
+  breakMinutes: number;
+  distractionMinutes: number;
+  estimatedMinutes: number;
   totalTasks: number;
   completedTasks: number;
   pendingTasks: number;
   categoryBreakdown: CategoryBreakdown[];
   estimatedVsActual: EstimatedVsActual[];
+  taskTimeBreakdown: TaskTimeBreakdown[];
 }
 
 export interface WeeklyAnalytics {
@@ -168,7 +216,9 @@ export interface TimerState {
   isRunning: boolean;
   sessionId: number | null;
   startTime: string | null;
-  elapsedSeconds: number;
+  elapsedSeconds: number;          // current (or most recent) session
+  actualSeconds: number;           // all tracked time for the task, including live session
+  estimatedMinutes: number;
 }
 
 // ── Navigation ──
@@ -185,6 +235,9 @@ export interface AppSettingsMap {
   breakReminders: 'true' | 'false';
   dailyWorkingHours: string;           // e.g. "8"
   timeFormat: '12' | '24';
+  startMinimized: 'true' | 'false';
+  minimizeToTray: 'true' | 'false';
+  pauseOnLock: 'true' | 'false';
   [key: string]: string;
 }
 
@@ -194,6 +247,9 @@ export interface DayTrackAPI {
   // Tasks
   getTasks: (date: string) => Promise<Task[]>;
   getTasksByRange: (startDate: string, endDate: string) => Promise<Task[]>;
+  getTaskHistory: (date: string) => Promise<Task[]>;
+  getTaskHistoryByRange: (startDate: string, endDate: string) => Promise<Task[]>;
+  setTaskDayStatus: (taskId: number, day: string, status: TaskStatus) => Promise<void>;
   getAllTasks: (filters?: TaskFilters) => Promise<Task[]>;
   getTask: (id: number) => Promise<Task | null>;
   createTask: (input: CreateTaskInput) => Promise<Task>;
@@ -207,10 +263,15 @@ export interface DayTrackAPI {
   startTimer: (taskId: number) => Promise<TaskSession>;
   pauseTimer: (sessionId: number) => Promise<TaskSession>;
   stopTimer: (sessionId: number) => Promise<TaskSession>;
-  getActiveSession: () => Promise<{ session: TaskSession; task: Task } | null>;
+  clearTimerContext: () => Promise<void>;
+  getActiveSession: () => Promise<ActiveTimerContext | null>;
   getTaskSessions: (taskId: number) => Promise<TaskSession[]>;
-  adjustTime: (taskId: number, minutes: number, reason: string) => Promise<TimeAdjustment>;
-  recoverTimers: () => Promise<void>;
+  getSessionsByDate: (date: string) => Promise<SessionWithTask[]>;
+  updateSessionTimes: (input: UpdateSessionInput) => Promise<TaskSession>;
+  adjustTime: (taskId: number, minutes: number, reason: string, date?: string) => Promise<TimeAdjustment>;
+  getTaskAdjustments: (taskId: number) => Promise<TimeAdjustment[]>;
+  deleteAdjustment: (id: number) => Promise<void>;
+  recoverTimers: () => Promise<number>;
 
   // Daily Plans
   getDailyPlan: (date: string) => Promise<DailyPlan | null>;
@@ -225,8 +286,9 @@ export interface DayTrackAPI {
   getWeeklyAnalytics: (weekStart: string) => Promise<WeeklyAnalytics>;
   getMonthlyAnalytics: (year: number, month: number) => Promise<DailyAnalytics[]>;
   getCategoryAnalytics: (startDate: string, endDate: string) => Promise<CategoryBreakdown[]>;
+  getTaskTimeBreakdown: (startDate: string, endDate: string) => Promise<TaskTimeBreakdown[]>;
 
-  // Distractions
+  // Distractions / breaks
   logDistraction: (input: CreateDistractionInput) => Promise<DistractionLog>;
   getDistractions: (date: string) => Promise<DistractionLog[]>;
   getDistractionsByRange: (startDate: string, endDate: string) => Promise<DistractionLog[]>;
@@ -238,8 +300,8 @@ export interface DayTrackAPI {
   getAllSettings: () => Promise<Record<string, string>>;
 
   // System
-  setAutoStartup: (enabled: boolean) => Promise<void>;
-  getAutoStartup: () => Promise<boolean>;
+  setAutoStartup: (enabled: boolean, startMinimized?: boolean) => Promise<void>;
+  getAutoStartup: (startMinimized?: boolean) => Promise<boolean>;
   showNotification: (title: string, body: string) => Promise<void>;
   exportToCSV: (startDate: string, endDate: string) => Promise<string>;
   backupData: () => Promise<string>;
@@ -251,6 +313,7 @@ export interface DayTrackAPI {
 
   // Events from main process
   onTimerUpdate: (callback: (state: TimerState) => void) => () => void;
+  onDayChanged: (callback: (date: string) => void) => () => void;
 }
 
 // ── Extend Window ──

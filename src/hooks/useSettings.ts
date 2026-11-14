@@ -15,9 +15,9 @@ export const useSettings = () => {
     await refreshSettings();
   }, [refreshSettings]);
 
-  const setAutoStartup = useCallback(async (enabled: boolean): Promise<void> => {
+  const setAutoStartup = useCallback(async (enabled: boolean, startMinimized = true): Promise<void> => {
     if (!window.daytrack) return;
-    await window.daytrack.setAutoStartup(enabled);
+    await window.daytrack.setAutoStartup(enabled, startMinimized);
     await setSetting('autoStartup', enabled ? 'true' : 'false');
   }, [setSetting]);
 

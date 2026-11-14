@@ -5,6 +5,9 @@ const api: DayTrackAPI = {
   // ── Tasks ──
   getTasks: (date) => ipcRenderer.invoke('tasks:get', date),
   getTasksByRange: (startDate, endDate) => ipcRenderer.invoke('tasks:getByRange', startDate, endDate),
+  getTaskHistory: (date) => ipcRenderer.invoke('tasks:getHistory', date),
+  getTaskHistoryByRange: (startDate, endDate) => ipcRenderer.invoke('tasks:getHistoryByRange', startDate, endDate),
+  setTaskDayStatus: (taskId, day, status) => ipcRenderer.invoke('tasks:setDayStatus', taskId, day, status),
   getAllTasks: (filters?) => ipcRenderer.invoke('tasks:getAll', filters),
   getTask: (id) => ipcRenderer.invoke('tasks:getOne', id),
   createTask: (input) => ipcRenderer.invoke('tasks:create', input),
@@ -18,9 +21,14 @@ const api: DayTrackAPI = {
   startTimer: (taskId) => ipcRenderer.invoke('timer:start', taskId),
   pauseTimer: (sessionId) => ipcRenderer.invoke('timer:pause', sessionId),
   stopTimer: (sessionId) => ipcRenderer.invoke('timer:stop', sessionId),
+  clearTimerContext: () => ipcRenderer.invoke('timer:clearContext'),
   getActiveSession: () => ipcRenderer.invoke('timer:getActive'),
   getTaskSessions: (taskId) => ipcRenderer.invoke('timer:getSessions', taskId),
-  adjustTime: (taskId, minutes, reason) => ipcRenderer.invoke('timer:adjustTime', taskId, minutes, reason),
+  getSessionsByDate: (date) => ipcRenderer.invoke('timer:getSessionsByDate', date),
+  updateSessionTimes: (input) => ipcRenderer.invoke('timer:updateSessionTimes', input),
+  adjustTime: (taskId, minutes, reason, date?) => ipcRenderer.invoke('timer:adjustTime', taskId, minutes, reason, date),
+  getTaskAdjustments: (taskId) => ipcRenderer.invoke('timer:getAdjustments', taskId),
+  deleteAdjustment: (id) => ipcRenderer.invoke('timer:deleteAdjustment', id),
   recoverTimers: () => ipcRenderer.invoke('timer:recover'),
 
   // ── Daily Plans ──
@@ -36,8 +44,9 @@ const api: DayTrackAPI = {
   getWeeklyAnalytics: (weekStart) => ipcRenderer.invoke('analytics:weekly', weekStart),
   getMonthlyAnalytics: (year, month) => ipcRenderer.invoke('analytics:monthly', year, month),
   getCategoryAnalytics: (startDate, endDate) => ipcRenderer.invoke('analytics:category', startDate, endDate),
+  getTaskTimeBreakdown: (startDate, endDate) => ipcRenderer.invoke('analytics:taskTime', startDate, endDate),
 
-  // ── Distractions ──
+  // ── Distractions / breaks ──
   logDistraction: (input) => ipcRenderer.invoke('distractions:log', input),
   getDistractions: (date) => ipcRenderer.invoke('distractions:get', date),
   getDistractionsByRange: (startDate, endDate) => ipcRenderer.invoke('distractions:getRange', startDate, endDate),
@@ -49,8 +58,8 @@ const api: DayTrackAPI = {
   getAllSettings: () => ipcRenderer.invoke('settings:getAll'),
 
   // ── System ──
-  setAutoStartup: (enabled) => ipcRenderer.invoke('system:autoStartup:set', enabled),
-  getAutoStartup: () => ipcRenderer.invoke('system:autoStartup:get'),
+  setAutoStartup: (enabled, startMinimized) => ipcRenderer.invoke('system:autoStartup:set', enabled, startMinimized),
+  getAutoStartup: (startMinimized) => ipcRenderer.invoke('system:autoStartup:get', startMinimized),
   showNotification: (title, body) => ipcRenderer.invoke('system:notification', title, body),
   exportToCSV: (startDate, endDate) => ipcRenderer.invoke('system:export:csv', startDate, endDate),
   backupData: () => ipcRenderer.invoke('system:backup'),
@@ -66,6 +75,13 @@ const api: DayTrackAPI = {
     ipcRenderer.on('timer:tick', listener);
     return () => {
       ipcRenderer.removeListener('timer:tick', listener);
+    };
+  },
+  onDayChanged: (callback: (date: string) => void) => {
+    const listener = (_event: Electron.IpcRendererEvent, date: string) => callback(date);
+    ipcRenderer.on('day:changed', listener);
+    return () => {
+      ipcRenderer.removeListener('day:changed', listener);
     };
   },
 };

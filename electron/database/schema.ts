@@ -22,10 +22,12 @@ CREATE TABLE IF NOT EXISTS tasks (
 CREATE TABLE IF NOT EXISTS task_sessions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id INTEGER NOT NULL,
+  session_date TEXT,
   start_time TEXT NOT NULL,
   end_time TEXT,
   duration_seconds INTEGER DEFAULT 0,
   is_active INTEGER DEFAULT 0,
+  last_heartbeat TEXT,
   FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
@@ -51,6 +53,7 @@ CREATE TABLE IF NOT EXISTS daily_summaries (
 CREATE TABLE IF NOT EXISTS time_adjustments (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   task_id INTEGER NOT NULL,
+  adjustment_date TEXT,
   adjusted_minutes INTEGER NOT NULL,
   reason TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now','localtime')),
@@ -60,10 +63,24 @@ CREATE TABLE IF NOT EXISTS time_adjustments (
 CREATE TABLE IF NOT EXISTS distraction_logs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   log_date TEXT NOT NULL,
+  kind TEXT DEFAULT 'distraction' CHECK(kind IN ('distraction','break')),
   category TEXT NOT NULL,
   duration_minutes INTEGER NOT NULL,
   description TEXT DEFAULT '',
   created_at TEXT DEFAULT (datetime('now','localtime'))
+);
+
+-- Immutable per-day record of where a task appeared.
+-- Carrying a task forward adds a row for the new day instead of erasing history.
+CREATE TABLE IF NOT EXISTS task_day_logs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  task_id INTEGER NOT NULL,
+  day TEXT NOT NULL,
+  status TEXT DEFAULT 'pending' CHECK(status IN ('pending','in_progress','completed')),
+  created_at TEXT DEFAULT (datetime('now','localtime')),
+  updated_at TEXT DEFAULT (datetime('now','localtime')),
+  UNIQUE(task_id, day),
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS app_settings (
@@ -88,6 +105,10 @@ export const DEFAULT_SETTINGS: Record<string, string> = {
   breakReminders: 'false',
   dailyWorkingHours: '8',
   timeFormat: '24',
+  startMinimized: 'true',
+  minimizeToTray: 'true',
+  pauseOnLock: 'true',
+  lastStartupNotification: '',
 };
 
 export const INSERT_DEFAULT_SETTINGS = `

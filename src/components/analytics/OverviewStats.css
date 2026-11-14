@@ -45,9 +45,26 @@
   color: var(--danger);
 }
 
+.overview-icon-badge.info {
+  background-color: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+}
+
+.overview-icon-badge.muted {
+  background-color: rgba(148, 163, 184, 0.14);
+  color: var(--text-secondary);
+}
+
 .overview-stat-body {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+}
+
+.overview-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .overview-label {

@@ -10,6 +10,9 @@ export const TimerDisplay: React.FC = () => {
   const isRunning = timerState.isRunning;
   const task = activeSession?.task;
 
+  const actualMinutes = Math.round(timerState.actualSeconds / 60);
+  const difference = actualMinutes - timerState.estimatedMinutes;
+
   return (
     <div className="timer-display-hero">
       <div className={`timer-ring ${isRunning ? 'pulse-ring' : ''}`}>
@@ -30,9 +33,21 @@ export const TimerDisplay: React.FC = () => {
                 {task.category}
               </Badge>
               <span className="timer-comparison-text">
-                Tracked: <strong>{formatDuration(task.actual_minutes)}</strong> / Estimated: <strong>{formatDuration(task.estimated_minutes)}</strong>
+                Tracked: <strong>{formatDuration(actualMinutes)}</strong> / Estimated:{' '}
+                <strong>{formatDuration(timerState.estimatedMinutes)}</strong>
+                {actualMinutes > 0 && difference > 0 && (
+                  <span className="timer-diff over"> (+{formatDuration(difference)} over estimate)</span>
+                )}
+                {actualMinutes > 0 && difference < 0 && (
+                  <span className="timer-diff under"> ({formatDuration(Math.abs(difference))} under estimate)</span>
+                )}
               </span>
             </div>
+            <p className="timer-session-note">
+              {isRunning
+                ? 'This session is being recorded from timestamps, so it stays accurate even if the UI is throttled.'
+                : 'Timer paused. Your last session is saved — resume to start a new work session.'}
+            </p>
           </>
         ) : (
           <p className="no-active-task-hint">

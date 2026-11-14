@@ -33,7 +33,9 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 export const Sidebar: React.FC = () => {
-  const { currentPage, setCurrentPage, timerState, pauseTimer, startTimer } = useApp();
+  const { currentPage, setCurrentPage, timerState, activeSession, pauseTimer, startTimer } = useApp();
+
+  const timerVisible = !!activeSession || timerState.isRunning;
 
   return (
     <aside className="sidebar">
@@ -69,15 +71,20 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* Active Timer Mini Widget */}
-      {timerState.isRunning && (
-        <div className="sidebar-timer-widget" onClick={() => setCurrentPage('timer')}>
+      {/* Active / paused timer mini widget */}
+      {timerVisible && activeSession && (
+        <div
+          className={`sidebar-timer-widget ${timerState.isRunning ? '' : 'paused'}`}
+          onClick={() => setCurrentPage('timer')}
+        >
           <div className="widget-header">
-            <span className="widget-pulsing-dot" />
-            <span className="widget-label">Running Timer</span>
+            <span className={`widget-pulsing-dot ${timerState.isRunning ? '' : 'paused'}`} />
+            <span className="widget-label">
+              {timerState.isRunning ? 'Running Timer' : 'Timer Paused'}
+            </span>
           </div>
-          <p className="widget-task-name" title={timerState.taskTitle}>
-            {timerState.taskTitle}
+          <p className="widget-task-name" title={activeSession.task.title}>
+            {activeSession.task.title}
           </p>
           <div className="widget-controls">
             <span className="widget-time">{formatTime(timerState.elapsedSeconds)}</span>
@@ -87,8 +94,8 @@ export const Sidebar: React.FC = () => {
                 e.stopPropagation();
                 if (timerState.isRunning) {
                   pauseTimer();
-                } else if (timerState.taskId) {
-                  startTimer(timerState.taskId);
+                } else {
+                  startTimer(activeSession.task.id);
                 }
               }}
               title={timerState.isRunning ? 'Pause' : 'Resume'}

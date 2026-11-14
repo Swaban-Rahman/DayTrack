@@ -1,6 +1,13 @@
+.day-detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .day-detail-summary-bar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 20px;
   padding: 12px 16px;
   background-color: var(--bg-input);
@@ -22,6 +29,45 @@
 
 .metric-icon.accent {
   color: var(--accent);
+}
+
+.metric-icon.break {
+  color: #38bdf8;
+}
+
+.metric-icon.distraction {
+  color: var(--danger);
+}
+
+.day-category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.day-category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  background-color: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+.day-category-chip strong {
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.day-category-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
 }
 
 .day-detail-task-list {

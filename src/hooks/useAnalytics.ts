@@ -3,6 +3,7 @@ import type {
   DailyAnalytics,
   WeeklyAnalytics,
   CategoryBreakdown,
+  TaskTimeBreakdown,
   DistractionLog,
   CreateDistractionInput
 } from '../types';
@@ -50,6 +51,16 @@ export const useAnalytics = () => {
     }
   }, []);
 
+  const getTaskTimeBreakdown = useCallback(async (startDate: string, endDate: string): Promise<TaskTimeBreakdown[]> => {
+    if (!window.daytrack) return [];
+    setLoading(true);
+    try {
+      return await window.daytrack.getTaskTimeBreakdown(startDate, endDate);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const getDistractions = useCallback(async (date: string): Promise<DistractionLog[]> => {
     if (!window.daytrack) return [];
     return await window.daytrack.getDistractions(date);
@@ -76,6 +87,7 @@ export const useAnalytics = () => {
     getWeeklyAnalytics,
     getMonthlyAnalytics,
     getCategoryAnalytics,
+    getTaskTimeBreakdown,
     getDistractions,
     getDistractionsByRange,
     logDistraction,

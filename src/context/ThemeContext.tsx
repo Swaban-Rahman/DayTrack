@@ -11,29 +11,29 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [theme, setThemeState] = useState<Theme>('dark');
+  const [theme, setThemeState] = useState<Theme>(() => {
+    const cached = window.localStorage.getItem('daytrack-theme');
+    const initial: Theme = cached === 'light' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = initial;
+    return initial;
+  });
 
   useEffect(() => {
-    // Read initial theme from settings or default to dark
     if (window.daytrack) {
       window.daytrack.getSetting('theme').then((savedTheme) => {
         if (savedTheme === 'light' || savedTheme === 'dark') {
           setThemeState(savedTheme);
           document.documentElement.dataset.theme = savedTheme;
-        } else {
-          document.documentElement.dataset.theme = 'dark';
+          window.localStorage.setItem('daytrack-theme', savedTheme);
         }
-      }).catch(() => {
-        document.documentElement.dataset.theme = 'dark';
-      });
-    } else {
-      document.documentElement.dataset.theme = 'dark';
+      }).catch(() => undefined);
     }
   }, []);
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
     document.documentElement.dataset.theme = newTheme;
+    window.localStorage.setItem('daytrack-theme', newTheme);
     if (window.daytrack) {
       window.daytrack.setSetting('theme', newTheme).catch(console.error);
     }

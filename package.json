@@ -8,6 +8,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "package": "vite build && electron-builder --win",
+    "make-icon": "electron scripts/make-icon.js",
     "postinstall": "electron-builder install-app-deps"
   },
   "build": {
@@ -18,12 +19,15 @@
     },
     "win": {
       "target": "nsis",
-      "icon": "public/icon.png"
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "installerIcon": "public/icon.png"
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
     },
     "files": [
       "dist/**/*",
