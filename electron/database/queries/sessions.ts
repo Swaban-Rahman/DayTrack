@@ -24,6 +24,9 @@ function getTask(taskId: number): Task | null {
 
 export function startSession(taskId: number): TaskSession {
   const db = getDb();
+  if (!Number.isInteger(taskId) || taskId <= 0) {
+    throw new Error('Select a valid task before starting the timer');
+  }
   const task = getTask(taskId);
   if (!task) throw new Error('Task not found');
   if (task.status === 'completed') throw new Error('Cannot start a timer on a completed task');
@@ -147,6 +150,14 @@ export function getActiveSession(): ActiveTimerContext | null {
 export function touchActiveSession(): void {
   const db = getDb();
   db.prepare("UPDATE task_sessions SET last_heartbeat = ? WHERE is_active = 1").run(nowIso());
+}
+
+/** Finalized session seconds only; the running session is added live by the caller. */
+export function getTaskTrackedSeconds(taskId: number): number {
+  const row = getDb().prepare(
+    'SELECT COALESCE(SUM(duration_seconds), 0) AS total FROM task_sessions WHERE task_id = ? AND is_active = 0'
+  ).get(taskId) as { total: number };
+  return Math.max(0, Math.floor(row.total));
 }
 
 export function getTaskSessions(taskId: number): TaskSession[] {

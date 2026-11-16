@@ -17,7 +17,8 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ onSelectTask }) =>
     startTimer,
     pauseTimer,
     stopTimer,
-    completeTask
+    completeTask,
+    notify
   } = useApp();
 
   const [selectedTaskId, setSelectedTaskId] = useState<string>('');
@@ -39,12 +40,12 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ onSelectTask }) =>
   const selectedIsDifferent = !!selectedTaskId && !!currentTaskId && Number(selectedTaskId) !== currentTaskId;
 
   const handleStart = async () => {
-    const idToStart = selectedTaskId
-      ? parseInt(selectedTaskId, 10)
-      : currentTaskId || selectableTasks[0]?.id;
-    if (idToStart) {
-      await startTimer(idToStart);
+    const idToStart = selectedTaskId ? parseInt(selectedTaskId, 10) : currentTaskId;
+    if (!idToStart) {
+      notify('Select a task before starting the timer.', 'info');
+      return;
     }
+    await startTimer(idToStart);
   };
 
   return (
@@ -70,7 +71,7 @@ export const TimerControls: React.FC<TimerControlsProps> = ({ onSelectTask }) =>
         </select>
       </div>
 
-      {selectedIsDifferent && (
+      {isRunning && selectedIsDifferent && (
         <p className="timer-switch-hint">
           <ArrowRightLeft size={13} /> Starting the selected task will ask before pausing the
           current timer.

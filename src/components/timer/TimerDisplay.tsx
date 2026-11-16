@@ -51,7 +51,7 @@ export const TimerDisplay: React.FC = () => {
           </>
         ) : (
           <p className="no-active-task-hint">
-            Select a task below or press Start to begin tracking your work.
+            Select a task below, then press Start to begin tracking your work.
           </p>
         )}
       </div>

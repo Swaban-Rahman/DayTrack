@@ -158,11 +158,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     const init = async () => {
       setIsLoading(true);
       if (window.daytrack) {
-        try {
-          await window.daytrack.recoverTimers();
-        } catch (e) {
-          console.error("Error recovering timers:", e);
-        }
+        // Crash recovery runs once in the main process at startup. Running it
+        // here would finalize a live session whenever the renderer remounts.
         await Promise.all([
           refreshTasks(),
           refreshActiveSession(),
@@ -290,6 +287,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
 
   const startTimer = async (taskId: number): Promise<TaskSession | null> => {
     if (!window.daytrack) return null;
+    if (!Number.isInteger(taskId) || taskId <= 0) {
+      notify("Select a task before starting the timer.", "info");
+      return null;
+    }
 
     const current = timerRef.current;
     if (current.isRunning && current.taskId && current.taskId !== taskId) {

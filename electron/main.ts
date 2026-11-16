@@ -14,6 +14,7 @@ import { initDatabase, closeDb, checkpoint, isDbOpen } from './database/init';
 import { registerAllHandlers } from './ipc/handlers';
 import {
   getActiveSession,
+  getTaskTrackedSeconds,
   recoverTimers,
   pauseSession,
   startSession,
@@ -438,9 +439,13 @@ function sendTimerState(): void {
     const active = getActiveSession();
     if (active) {
       const running = active.isRunning;
-      const elapsed = running && active.session
+      const liveSeconds = running && active.session
         ? Math.max(0, Math.floor((Date.now() - new Date(active.session.start_time).getTime()) / 1000))
-        : active.session?.duration_seconds || 0;
+        : 0;
+      // Pause finalizes a session row and resume opens a new one, so the
+      // visible clock must be the sum of saved rows plus the live segment.
+      // Otherwise resume appears to restart at 00:00 even though time was kept.
+      const trackedSeconds = getTaskTrackedSeconds(active.task.id) + liveSeconds;
 
       state = {
         taskId: active.task.id,
@@ -448,8 +453,8 @@ function sendTimerState(): void {
         isRunning: running,
         sessionId: active.session?.id ?? null,
         startTime: active.session?.start_time ?? null,
-        elapsedSeconds: elapsed,
-        actualSeconds: active.task.actual_minutes * 60 + (running ? elapsed : 0),
+        elapsedSeconds: trackedSeconds,
+        actualSeconds: trackedSeconds,
         estimatedMinutes: active.task.estimated_minutes,
       };
     }
@@ -471,7 +476,7 @@ function startTimerTick(): void {
       sendTimerState();
 
       // Persist a heartbeat so a crash/shutdown only counts time we can prove was observed.
-      if (tickCount % 15 === 0) {
+      if (tickCount % 5 === 0) {
         const active = getActiveSession();
         if (active?.isRunning) touchActiveSession();
       }

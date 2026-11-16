@@ -85,7 +85,7 @@ function getCategoryTotals(date: string): Map<string, number> {
   return categories;
 }
 
-function getTaskTimeTotals(date: string): TaskTimeBreakdown[] {
+function getTaskTimeTotals(date: string, includeAdjustments = true): TaskTimeBreakdown[] {
   const db = getDb();
   const rows = db.prepare(`
     SELECT t.id as taskId, t.title as taskTitle, t.category,
@@ -123,14 +123,16 @@ function getTaskTimeTotals(date: string): TaskTimeBreakdown[] {
     }
   }
 
-  const adjustmentRows = db.prepare(`
-    SELECT t.id as taskId, t.title as taskTitle, t.category,
-           COALESCE(SUM(a.adjusted_minutes), 0) as totalMinutes
-    FROM time_adjustments a
-    INNER JOIN tasks t ON t.id = a.task_id
-    WHERE a.adjustment_date = ? AND t.is_deleted = 0
-    GROUP BY t.id, t.title, t.category
-  `).all(date) as { taskId: number; taskTitle: string; category: TaskCategory; totalMinutes: number }[];
+  const adjustmentRows = includeAdjustments
+    ? (db.prepare(`
+        SELECT t.id as taskId, t.title as taskTitle, t.category,
+               COALESCE(SUM(a.adjusted_minutes), 0) as totalMinutes
+        FROM time_adjustments a
+        INNER JOIN tasks t ON t.id = a.task_id
+        WHERE a.adjustment_date = ? AND t.is_deleted = 0
+        GROUP BY t.id, t.title, t.category
+      `).all(date) as { taskId: number; taskTitle: string; category: TaskCategory; totalMinutes: number }[])
+    : [];
 
   for (const row of adjustmentRows) {
     const existing = map.get(row.taskId);
@@ -208,8 +210,11 @@ export function getDailyAnalytics(date: string): DailyAnalytics {
     .filter((entry) => entry.minutes > 0)
     .sort((a, b) => b.minutes - a.minutes);
 
-  const taskTimeBreakdown = getTaskTimeTotals(date);
-  const taskMinutes = new Map(taskTimeBreakdown.map((entry) => [entry.taskId, entry.minutes]));
+  // Estimated-vs-actual is session-only. Manual adjustments stay in the
+  // separate tracked total and task breakdown, never in the estimate comparison.
+  const sessionTotals = getTaskTimeTotals(date, false);
+  const taskMinutes = new Map(sessionTotals.map((entry) => [entry.taskId, entry.minutes]));
+  const taskTimeBreakdown = getTaskTimeTotals(date, true);
 
   const dayTasks = db.prepare(`
     SELECT t.id, t.title, t.estimated_minutes, t.actual_minutes
